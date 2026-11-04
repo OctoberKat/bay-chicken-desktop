@@ -31,6 +31,18 @@ win:
       arch: x64
     - target: portable
       arch: x64
+mac:
+  icon: assets/app-icon-1024.png
+  category: public.app-category.entertainment
+  identity: null
+  artifactName: BayChicken-${version}-${arch}.${ext}
+  extendInfo:
+    LSUIElement: true
+  target:
+    - target: dmg
+    - target: zip
+dmg:
+  artifactName: BayChicken-${version}-${arch}.dmg
 nsis:
   artifactName: BayChicken-Setup-${version}-x64.exe
   oneClick: false

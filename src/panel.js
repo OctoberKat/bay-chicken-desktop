@@ -42,7 +42,9 @@ function update(next) {
   $('#hello-chip').textContent=`你好，${name()}`;$('#help-title').textContent=`陪${name()}玩`;
   $('#message-input').placeholder=`和${name()}说点什么…`;
   $('#app-version').textContent=`湾湾 v${state.version}`;
-  $('#shortcut-status').textContent=`${state.shortcuts?.toggle?'F8 显示 / 隐藏':'F8 被占用，请使用托盘'} · ${state.shortcuts?.panel?'Ctrl + Alt + B 打开面板':'面板快捷键被占用，可点「…」'}`;
+  const panelKeys = state.platform === 'darwin' ? '⌘ + ⌥ + B' : 'Ctrl + Alt + B';
+  $('#shortcut-status').textContent=`${state.shortcuts?.toggle?'F8 显示 / 隐藏':'F8 被占用，请使用托盘'} · ${state.shortcuts?.panel?`${panelKeys} 打开面板`:'面板快捷键被占用，可点「…」'}`;
+  $('#footer-shortcuts').innerHTML=`F8 显示 / 隐藏 · ${panelKeys} 互动面板<br>左键搬家 · 右键旋转 · 双击回正`;
   $('.connection').classList.toggle('online', state.connected);
   $('#connection-label').textContent = state.connected ? `AI 已配置 · ${state.settings.model}` : '离线陪伴 · 预设回应';
   $('#connect-link').textContent = state.connected ? '连接设置 ↗' : '连接 AI ↗';

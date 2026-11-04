@@ -17,6 +17,22 @@ Windows 透明置顶三维桌宠。使用 Electron + Three.js，保留公开源�
 
 两种 EXE 都已内置模型，形象互动不需要 API Key，不需要额外安装 Node.js。程序未做代码签名。
 
+### macOS
+
+macOS 版使用菜单栏图标运行，不占用 Dock。构建产物在 `release/exe`：
+
+```bash
+npm install
+npm run mac        # 生成 .dmg 与 .zip（当前 CPU 架构）
+npm run mac:dir    # 只生成 .app，便于本地调试
+```
+
+把 `release/exe/mac-arm64/BayChicken.app`（Apple 芯片）或对应 `x64` 目录拖进“应用程序”即可。也可双击本目录的 `启动湾湾.command`：优先打开已安装的 `/Applications/BayChicken.app`，否则安装依赖并以开发模式启动。首次打开若被 Gatekeeper 拦截，右键点按 App 选择“打开”。macOS 版同样未做代码签名与公证。
+
+macOS 快捷键为 `⌘ + ⌥ + B` 打开互动面板；`F8` 显示 / 隐藏。其余鼠标操作与 Windows 版一致。
+
+### Windows 便携版
+
 双击本目录的 `启动湾湾.vbs`，或运行 `release/BayChicken/electron.exe`。免安装版需要保留整个 `BayChicken` 文件夹，可整体移动到其他 Windows x64 电脑；首次启动无需联网下载模型或依赖。
 
 - 右键拖动玩偶：水平 360° 旋转，垂直拖动查看俯视与仰视；滚轮缩放。双击、按 R 或点回正按钮：回到正面默认视角。Shift + 滚轮也可水平旋转。透视相机显示真正的 GLB 网格，无图片翻转替代。

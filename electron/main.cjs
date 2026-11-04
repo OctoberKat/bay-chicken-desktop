@@ -4,6 +4,7 @@ const fs = require('node:fs/promises');
 const { DEFAULTS, validateSettings, streamChat, offlineReply } = require('./core.cjs');
 const {clampToArea,dragPosition}=require('./desktop.cjs');
 const {SIDES,nearestEdge,dockPosition,visibleRect}=require('./edges.cjs');
+const isMac = process.platform === 'darwin';
 let edgeSide=null,edgeArea=null,edgeTimer=null,edgeTarget=null;
 const windowSizes=new WeakMap();
 function positionWindow(win,p){win.setBounds({...p,...windowSizes.get(win)});}
@@ -17,7 +18,7 @@ const smoke = process.argv.includes('--smoke');
 if (smoke) app.setPath('userData', path.join(app.getPath('temp'), 'bay-chicken-smoke-' + process.pid));
 const stateFile = () => path.join(app.getPath('userData'), 'companion.json');
 const send = (channel, value) => [pet, panel].forEach(w => { if (w && !w.isDestroyed()) w.webContents.send(channel, value); });
-const publicState = () => ({ version:app.getVersion(),shortcuts:{...shortcutStatus},edge:edgeSide,settings: state.settings, history: state.history, hasKey: !!key, busy: !!controller, petStatus,
+const publicState = () => ({ version:app.getVersion(),platform:process.platform,shortcuts:{...shortcutStatus},edge:edgeSide,settings: state.settings, history: state.history, hasKey: !!key, busy: !!controller, petStatus,
   connected: !!key || (state.settings.provider === 'compatible' && ['localhost', '127.0.0.1', '[::1]'].includes(new URL(state.settings.endpoint).hostname)) });
 function persist() {
   const snapshot = JSON.stringify(state);
@@ -95,6 +96,13 @@ function securedWindow(options, page) {
   win.loadFile(path.join(__dirname, '../dist', page));
   return win;
 }
+function setupMenu() {
+  Menu.setApplicationMenu(Menu.buildFromTemplate([
+    { role: 'appMenu' },
+    { role: 'editMenu' },
+    { role: 'windowMenu' },
+  ]));
+}
 async function boot() {
   try {
     const saved = JSON.parse(await fs.readFile(stateFile(), 'utf8'));
@@ -106,12 +114,23 @@ async function boot() {
       key = (await safeStorage.decryptStringAsync(Buffer.from(state.encryptedKey, 'base64'))).result;
     }
   } catch (error) { if (error.code !== 'ENOENT') console.warn('Could not restore companion state:', error.message); }
+  if (isMac) {
+    app.setName('湾湾大湾鸡');
+    app.setActivationPolicy('accessory');
+    app.dock?.hide();
+    setupMenu();
+  }
   const area = screen.getPrimaryDisplay().workArea;
   const size = { width: 320, height: 400 };
   const p = state.position && Number.isFinite(state.position.x) && Number.isFinite(state.position.y) ? clampPosition(state.position, size.width, size.height) : { x: area.x + area.width - 390, y: area.y + area.height - 480 };
   pet = securedWindow({ ...size, ...p, title: '湾湾 · 大湾鸡', frame: false, transparent: true, backgroundColor: '#00000000', hasShadow: false, resizable: false, skipTaskbar: true, alwaysOnTop: state.settings.alwaysOnTop, show: false }, 'pet.html');
   panel = securedWindow({ width: 280, height: Math.min(390, area.height - 24), title: '湾湾', frame: false, transparent: true, backgroundColor: '#00000000', hasShadow: false, resizable: false, alwaysOnTop: state.settings.alwaysOnTop, show: false }, 'panel.html');
   windowSizes.set(pet,size);windowSizes.set(panel,panelSize);
+  if (isMac) {
+    for (const win of [pet, panel]) {
+      win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
+    }
+  }
   pet.once('ready-to-show', () => {positionWindow(pet,p);pet.show();if(state.edgeSide)setEdge(state.edgeSide);});
   panel.on('close', e => { if (!app.isQuitting) { e.preventDefault(); panel.hide(); } });
   pet.on('closed', () => app.quit());
@@ -126,7 +145,8 @@ async function boot() {
   }, 90);
   const keepVisible=()=>{endDrag({dock:false});const[w,h]=pet.getSize();const[x,y]=pet.getPosition();const pos=clampPosition({x,y},w,h);positionWindow(pet,pos);state.position=pos;if(edgeSide)setEdge(edgeSide);placePanel();void persist().catch(console.error);};
   screen.on('display-metrics-changed',keepVisible);screen.on('display-removed',keepVisible);
-  const image = nativeImage.createFromPath(path.join(__dirname, '../assets/icon.png'));
+  let image = nativeImage.createFromPath(path.join(__dirname, '../assets/icon.png'));
+  if (isMac) image = image.resize({ width: 18, height: 18 });
   tray = new Tray(image);
   refreshIdentity();
   tray.on('double-click', () => { pet.show(); openPanel(); });
